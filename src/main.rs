@@ -48,7 +48,10 @@ fn main() {
         // `parse()` strings can be converted to integers in Rust through it.
         let guess: i32 = match guess.parse() {
             Ok(num) => num,
-            Err(_) => continue,
+            Err(_) => {
+                println!(" --- Please, Enter a number ---");
+                continue;
+            }
         };
 
         // Pattern Match:
