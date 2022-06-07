@@ -9,15 +9,14 @@ use std::cmp::Ordering;
 use std::io;
 
 fn main() {
-    println!(" ----- Guess the number -----\n");
+    println!(" ------  Guess the number  ------\n");
 
     let secret_number = rand::thread_rng().gen_range(1..101); // `gen_range(1..=100)` both are equivalent. strange syntax i know.
 
-    // println!(" -DEBUG-- The secret number is `{}`", secret_number);
-    println!(" -NOTE-- Press `quit` to exit --");
+    println!(" -NOTE-- Enter `quit` to exit ---");
 
     loop {
-        println!(" --- Please input your guess ---");
+        println!(" ------  Input your guess  ------");
 
         // The `::` syntax in the `::new` line indicates that new is an associated function of the `String` type.
         // An associated function is a function that’s implemented on a type, in this case String. This new function
@@ -35,8 +34,8 @@ fn main() {
         // `trim()` will eliminate any whitespace at the beggining and end. also it will remove `\n` and `\r`.
         guess = guess.trim().to_string();
 
-        match guess.as_str() {
-            "quit" => break,
+        match guess.to_lowercase().as_str() {
+            "quit" | "exit" => break,
             _ => {}
         }
 
@@ -49,7 +48,7 @@ fn main() {
         let guess: i32 = match guess.parse() {
             Ok(num) => num,
             Err(_) => {
-                println!(" --- Please, Enter a number ---");
+                println!(" ---  Please, Enter a number  ---\n");
                 continue;
             }
         };
