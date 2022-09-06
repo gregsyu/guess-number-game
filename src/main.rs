@@ -10,17 +10,27 @@ fn main() {
         let guess: String = Input::new()
             .with_prompt(" ! Input your guess")
             .interact_text()
-            .expect("failed");
+            .unwrap();
 
         match guess.as_str() {
             "quit" | "exit" => break,
             _ => {}
         }
 
-        let guess: usize = match guess.parse() {
-            Ok(num) => num,
+        let guess: isize = match guess.parse() {
+            Ok(num) => {
+                if num < 1 {
+                    println!(" @ Please, Enter a number greater than 0\n");
+                    continue;
+                } else if num > 100 {
+                    println!(" @ Please, Enter a number less than 100\n");
+                    continue;
+                } else {
+                    num
+                }
+            }
             Err(_) => {
-                println!(" @ Please, Enter a integer number\n");
+                println!(" @ Please, Enter a number\n");
                 continue;
             }
         };
