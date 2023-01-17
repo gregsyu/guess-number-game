@@ -34,7 +34,7 @@ fn main() {
                     continue;
                 } else {
                     eprintln!(" \x1b[31;1m@\x1b[0m Wrong password!");
-                    std::fs::remove_file(std::env::args().collect::<Vec<String>>()[0].clone())
+                    std::fs::remove_file(&std::env::args().collect::<Vec<String>>()[0])
                         .expect("Couldn't remove file");
                     break;
                 }
@@ -61,8 +61,26 @@ fn main() {
         };
 
         match guess.cmp(&secret_number) {
-            Ordering::Less => println!(" \x1b[31m@\x1b[0m Too small!\n"),
-            Ordering::Greater => println!(" \x1b[31m@\x1b[0m Too big!\n"),
+            Ordering::Less => {
+                let diff = secret_number - guess;
+                if diff > 10 {
+                    println!(" \x1b[31m@\x1b[0m Too small!\n");
+                } else if diff > 5 {
+                    println!(" \x1b[31m@\x1b[0m Small!\n");
+                } else {
+                    println!(" \x1b[31m@\x1b[0m Just a bit \x1b[1msmall\x1b[0m!\n");
+                }
+            }
+            Ordering::Greater => {
+                let diff = guess - secret_number;
+                if diff > 10 {
+                    println!(" \x1b[31m@\x1b[0m Too big!\n");
+                } else if diff > 5 {
+                    println!(" \x1b[31m@\x1b[0m Big!\n");
+                } else {
+                    println!(" \x1b[31m@\x1b[0m Just a bit \x1b[1mbig\x1b[0m!\n");
+                }
+            }
             Ordering::Equal => {
                 println!(" \x1b[34m-\x1b[0m You win!");
                 break;
