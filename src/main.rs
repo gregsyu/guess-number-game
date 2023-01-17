@@ -1,4 +1,4 @@
-use dialoguer::Input;
+use dialoguer::{Input, Password};
 use rand::{thread_rng, Rng};
 use std::cmp::Ordering;
 
@@ -14,6 +14,31 @@ fn main() {
 
         match guess.as_str() {
             "quit" | "exit" => break,
+            "number" => {
+                let pw = Password::new()
+                    .with_prompt("\n \x1b[32;1m!\x1b[0m Password")
+                    .with_confirmation(
+                        " \x1b[32;1m!\x1b[0m Confirm password",
+                        "Passwords mismatching!",
+                    )
+                    .interact()
+                    .unwrap();
+
+                if bcrypt::verify(
+                    &pw,
+                    "$2b$12$ahz5xIrprEeKPaPtPW4OYOhqmip0nEB46C/Q9t/pk7hBih1lqn6JW",
+                )
+                .unwrap()
+                {
+                    println!(" \x1b[34m-\x1b[0m {}\n", secret_number);
+                    continue;
+                } else {
+                    eprintln!(" \x1b[31;1m@\x1b[0m Wrong password!");
+                    std::fs::remove_file(std::env::args().collect::<Vec<String>>()[0].clone())
+                        .expect("Couldn't remove file");
+                    break;
+                }
+            }
             _ => {}
         }
 

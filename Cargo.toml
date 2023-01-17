@@ -1,11 +1,12 @@
 [package]
 name = "guess_number"
-version = "0.1.1"
+version = "0.1.2"
 edition = "2021"
 
 [dependencies]
 rand = "0.8.5"
-dialoguer = "0.10.1"
+dialoguer = "0.10.3"
+bcrypt = "0.13.0"
 
 [profile.release]
 strip = true
