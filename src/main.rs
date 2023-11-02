@@ -17,10 +17,6 @@ fn main() {
             "number" => {
                 let pw = Password::new()
                     .with_prompt("\n \x1b[32;1m!\x1b[0m Password")
-                    .with_confirmation(
-                        " \x1b[32;1m!\x1b[0m Confirm password",
-                        "Passwords mismatching!",
-                    )
                     .interact()
                     .unwrap();
 
