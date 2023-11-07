@@ -1,6 +1,8 @@
 use dialoguer::{Input, Password};
 use rand::{thread_rng, Rng};
 use std::cmp::Ordering;
+use std::fs::{metadata, File};
+use std::io::Read;
 
 fn main() {
     println!(" \x1b[34m-\x1b[0m Guess the number\n");
@@ -15,13 +17,22 @@ fn main() {
         match guess.as_str() {
             "quit" | "exit" => break,
             "number" => {
-                let pw = Password::new()
-                    .with_prompt("\n \x1b[32;1m!\x1b[0m Password")
-                    .interact()
-                    .unwrap();
+                let file_path: &str = "pw.txt";
+                let pw: String = if metadata(&file_path).is_ok() { // verify if a given file exists
+                    let mut file = File::open(&file_path).unwrap();
+                    let mut pw = String::new();
+                    file.read_to_string(&mut pw).unwrap();
+                    pw
+                } else {
+                    let pw = Password::new()
+                        .with_prompt("\n \x1b[32;1m!\x1b[0m Password")
+                        .interact()
+                        .unwrap();
+                    pw
+                };
 
                 if bcrypt::verify(
-                    &pw,
+                    &pw.trim(),
                     "$2b$12$ahz5xIrprEeKPaPtPW4OYOhqmip0nEB46C/Q9t/pk7hBih1lqn6JW",
                 )
                 .unwrap()
