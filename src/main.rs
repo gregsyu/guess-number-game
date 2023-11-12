@@ -26,6 +26,10 @@ fn main() {
 
             match guess.as_str() {
                 "quit" | "exit" => break 'game,
+                "restart" => {
+                    println!("\n \x1b[34m-\x1b[0m New game");
+                    break 'guess;
+                }
                 "number" => {
                     let file_path: &str = "pw.txt";
                     let pw: String = if metadata(&file_path).is_ok() { // verify if a given file exists
@@ -104,7 +108,7 @@ fn main() {
                     count += 1;
                     total_tries += tries;
 
-                    println!(" \x1b[34;1m-\x1b[0m You win!");
+                    println!(" \x1b[34;1m-\x1b[0m You win!\n");
                     println!(" \x1b[34m-\x1b[0m Number of Attempts this Round: \x1b[1m{tries}\x1b[0m");
                     println!(" \x1b[34m-\x1b[0m Number of Total Attempts: \x1b[1m{total_tries}\x1b[0m");
                     println!(" \x1b[34m-\x1b[0m Number of Total Guesses: \x1b[1m{count}\x1b[0m");
