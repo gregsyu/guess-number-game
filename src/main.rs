@@ -1,13 +1,39 @@
 use dialoguer::{Input, Password};
 use rand::{thread_rng, Rng};
 use std::cmp::Ordering;
-use std::fs::{metadata, File, OpenOptions};
+use std::fs::{File, OpenOptions};
 use std::io::Read;
+use std::path::Path;
 
-fn main() {
-    println!(" \x1b[34m-\x1b[0m Guess the number \x1b[1m(0.1.3)\x1b[0m");
-    let mut guesses = 0;
-    let mut total_tries = 0;
+const PW_PATH: &str = "pw.txt";
+const CSV_FILE_PATH: &str = "results.csv";
+
+fn main() -> anyhow::Result<()> {
+    println!(" \x1b[34m-\x1b[0m Guess the number \x1b[1m(0.1.4)\x1b[0m");
+    // Takes the values of `guesses` and `total_tries` from `CSV_FILE_PATH`
+    let (mut guesses, mut total_tries) = if Path::new(CSV_FILE_PATH).exists() {
+        let file = File::open(CSV_FILE_PATH)?;
+        let mut rdr = csv::ReaderBuilder::new()
+            .has_headers(true)
+            .from_reader(file);
+
+        // `find_map` iterates until it finds the first `Some` variant
+        let result = rdr.records().find_map(|result| {
+            let record = result.unwrap();
+            if let (Some(total_tries_str), Some(guesses_str)) = (record.get(1), record.get(0)) {
+                Some((
+                    guesses_str.parse().unwrap_or(0),
+                    total_tries_str.parse().unwrap_or(0),
+                ))
+            } else {
+                None
+            }
+        });
+
+        result.unwrap_or((0, 0))
+    } else {
+        (0, 0)
+    };
 
     'game: loop {
         let secret_number = thread_rng().gen_range(1..101);
@@ -21,44 +47,56 @@ fn main() {
             };
             let guess: String = Input::new()
                 .with_prompt(format!("\n \x1b[32m{}\x1b[0m Input your guess", sign))
-                .interact_text()
-                .unwrap();
+                .interact_text()?;
 
             match guess.as_str() {
-                "quit" | "exit" => break 'game,
+                "quit" | "exit" => {
+                    goodbye(None);
+                    break 'game;
+                }
+                "export" => {
+                    Exporter::new()
+                        .create(true)
+                        .print(true)
+                        .file(CSV_FILE_PATH)
+                        .export(guesses, total_tries)?;
+                    continue;
+                }
+                "results" => {
+                    print_results(guesses, total_tries, tries);
+                    continue;
+                }
                 "restart" => {
                     println!("\n \x1b[34m-\x1b[0m New game");
                     break 'guess;
                 }
                 "number" => {
-                    let file_path: &str = "pw.txt";
                     // verify if a given file exists
-                    let pw: String = if metadata(&file_path).is_ok() {
-                        let mut file = File::open(&file_path).unwrap();
+                    let pw: String = if Path::new(PW_PATH).exists() {
+                        let mut file = File::open(&PW_PATH)?;
                         let mut pw = String::new();
-                        file.read_to_string(&mut pw).unwrap();
+                        file.read_to_string(&mut pw)?;
                         pw
                     } else {
                         let pw = Password::new()
                             .with_prompt("\n \x1b[32;1m!\x1b[0m Password")
-                            .interact()
-                            .unwrap();
+                            .interact()?;
                         pw
                     };
 
                     if bcrypt::verify(
                         &pw.trim(),
                         "$2b$12$ahz5xIrprEeKPaPtPW4OYOhqmip0nEB46C/Q9t/pk7hBih1lqn6JW",
-                    )
-                    .unwrap()
-                    {
+                    )? {
                         println!(" \x1b[34m-\x1b[0m {}", secret_number);
                         continue;
                     } else {
                         eprintln!(" \x1b[31;1m@\x1b[0m Wrong password!");
-                        std::fs::remove_file(&std::env::args().collect::<Vec<String>>()[0])
-                            .expect("Couldn't remove file");
-                        break 'guess;
+                        match std::fs::remove_file(&std::env::args().collect::<Vec<String>>()[0]) {
+                            Ok(_) => eprintln!(" \x1b[31;1m@\x1b[0m Where's your file? >\x1b[31;1m:\x1b[0m^"),
+                            Err(_) => eprintln!(" \x1b[31;1m@\x1b[0m Next time i'll remove your file! >\x1b[31;1m:\x1b[0m("),
+                        }
+                        std::process::exit(255);
                     }
                 }
                 _ => {}
@@ -67,17 +105,17 @@ fn main() {
             let guess: isize = match guess.parse() {
                 Ok(num) => {
                     if num < 1 {
-                        println!(" \x1b[31;1m@\x1b[0m Please, Enter a number greater than 0\n");
+                        println!(" \x1b[31;1m@\x1b[0m Please, Enter a number greater than 0");
                         continue;
                     } else if num > 100 {
-                        println!(" \x1b[31;1m@\x1b[0m Please, Enter a number less than 100\n");
+                        println!(" \x1b[31;1m@\x1b[0m Please, Enter a number less than 100");
                         continue;
                     } else {
                         num
                     }
                 }
                 Err(_) => {
-                    println!(" \x1b[31;1m@\x1b[0m Please, Enter a valid number\n");
+                    println!(" \x1b[31;1m@\x1b[0m Please, Enter a valid number");
                     continue;
                 }
             };
@@ -110,38 +148,27 @@ fn main() {
                     total_tries += tries;
 
                     println!(" \x1b[34;1m-\x1b[0m You win!\n");
-                    println!(
-                        " \x1b[34m-\x1b[0m Number of Attempts this Round: \x1b[1m{tries}\x1b[0m"
-                    );
-                    println!(
-                        " \x1b[34m-\x1b[0m Number of Total Attempts: \x1b[1m{total_tries}\x1b[0m"
-                    );
-                    println!(" \x1b[34m-\x1b[0m Number of Total Guesses: \x1b[1m{guesses}\x1b[0m");
+                    print_results(guesses, total_tries, tries);
                     let new_game: String = Input::new()
                         .with_prompt(" \x1b[34m?\x1b[0m New Game? [Y/n/e]")
-                        .interact_text()
-                        .unwrap();
+                        .interact_text()?;
+                    let exporter = Exporter::new().file(CSV_FILE_PATH);
 
                     match new_game.trim().to_lowercase().as_str() {
-                        "y" | "yes" => break 'guess,
+                        "y" | "yes" => {
+                            // Only exports to the file if it exists else it does nothing
+                            exporter.export(guesses, total_tries).unwrap_or(());
+                            break 'guess;
+                        }
                         "e" | "export" => {
-                            let csv_file_path = "results.csv";
-                            let file = OpenOptions::new()
+                            exporter
                                 .create(true)
-                                .write(true)
-                                .open(csv_file_path)
-                                .unwrap();
-                            let mut wtr = csv::Writer::from_writer(file);
-
-                            wtr.write_record(&["Total guesses", "Total attempts"])
-                                .unwrap();
-                            wtr.write_record(&[guesses.to_string(), total_tries.to_string()])
-                                .unwrap();
-                            wtr.flush().unwrap();
-                            println!("\n \x1b[34;1m*\x1b[0m Exporting to file: {}", csv_file_path);
+                                .print(true)
+                                .export(guesses, total_tries)?;
                         }
                         _ => {
-                            println!("\n \x1b[34;1m-\x1b[0m Thanks for playing. Goodbye!");
+                            exporter.export(guesses, total_tries).unwrap_or(());
+                            goodbye(Some("\n"));
                         }
                     }
                     break 'game;
@@ -149,4 +176,78 @@ fn main() {
             }
         }
     }
+
+    Ok(())
+}
+
+struct Exporter {
+    file_path: String,
+    create: bool,
+    print: bool,
+}
+
+impl Exporter {
+    fn new() -> Self {
+        Exporter {
+            file_path: String::new(),
+            create: false,
+            print: false,
+        }
+    }
+
+    fn file(mut self, file_path: &str) -> Self {
+        self.file_path = String::from(file_path);
+        self
+    }
+
+    fn create(mut self, create: bool) -> Self {
+        self.create = create;
+        self
+    }
+
+    fn print(mut self, print: bool) -> Self {
+        self.print = print;
+        self
+    }
+
+    fn export<T>(&self, guesses: T, total_tries: T) -> std::io::Result<()>
+    where
+        T: ToString,
+    {
+        let file = OpenOptions::new()
+            .create(self.create)
+            .write(true)
+            .open(&self.file_path)?;
+        let mut wtr = csv::Writer::from_writer(file);
+
+        wtr.write_record(&["total guesses", "total attempts"])?;
+        wtr.write_record(&[guesses.to_string(), total_tries.to_string()])?;
+        wtr.flush()?;
+
+        if self.print {
+            println!(
+                "\n \x1b[34;1m*\x1b[0m Exporting to file: {}",
+                &self.file_path
+            );
+        }
+
+        Ok(())
+    }
+}
+
+fn print_results<T>(guesses: T, total_tries: T, tries: T) -> ()
+where
+    T: std::fmt::Display,
+{
+    println!(" \x1b[34m-\x1b[0m Number of Attempts this Round: \x1b[1m{tries}\x1b[0m");
+    println!(" \x1b[34m-\x1b[0m Number of Total Attempts: \x1b[1m{total_tries}\x1b[0m");
+    println!(" \x1b[34m-\x1b[0m Number of Total Guesses: \x1b[1m{guesses}\x1b[0m");
+}
+
+fn goodbye(beginning_str: Option<&str>) -> () {
+    println!(
+        "{} \x1b[34;1m-\x1b[0m Thanks for playing. Goodbye!",
+        beginning_str.unwrap_or("")
+    );
+    std::thread::sleep(std::time::Duration::from_millis(500)); // sleeps 0.5 seconds
 }
