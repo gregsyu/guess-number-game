@@ -9,9 +9,9 @@ const PW_PATH: &str = "pw.txt";
 const CSV_FILE_PATH: &str = "results.csv";
 
 fn main() -> anyhow::Result<()> {
-    println!(" \x1b[34m-\x1b[0m Guess the number \x1b[1m(0.1.4)\x1b[0m");
-    // Takes the values of `guesses` and `total_tries` from `CSV_FILE_PATH`
-    let (mut guesses, mut total_tries) = if Path::new(CSV_FILE_PATH).exists() {
+    println!(" \x1b[38;5;250m-\x1b[0m Guess the number \x1b[1m(0.1.4)\x1b[0m");
+    // Takes the values of `guesses`, `total_tries` and `name` from `CSV_FILE_PATH`
+    let (mut name, mut guesses, mut total_tries) = if Path::new(CSV_FILE_PATH).exists() {
         let file = File::open(CSV_FILE_PATH)?;
         let mut rdr = csv::ReaderBuilder::new()
             .has_headers(true)
@@ -20,8 +20,9 @@ fn main() -> anyhow::Result<()> {
         // `find_map` iterates until it finds the first `Some` variant
         let result = rdr.records().find_map(|result| {
             let record = result.unwrap();
-            if let (Some(total_tries_str), Some(guesses_str)) = (record.get(1), record.get(0)) {
+            if let (Some(name), Some(total_tries_str), Some(guesses_str)) = (record.get(0), record.get(2), record.get(1)) {
                 Some((
+                    String::from(name),
                     guesses_str.parse().unwrap_or(0),
                     total_tries_str.parse().unwrap_or(0),
                 ))
@@ -30,9 +31,9 @@ fn main() -> anyhow::Result<()> {
             }
         });
 
-        result.unwrap_or((0, 0))
+        result.unwrap_or((user("unknown"), 0, 0))
     } else {
-        (0, 0)
+        (user("player"), 0, 0)
     };
 
     'game: loop {
@@ -59,11 +60,18 @@ fn main() -> anyhow::Result<()> {
                         .create(true)
                         .print(true)
                         .file(CSV_FILE_PATH)
-                        .export(guesses, total_tries)?;
+                        .export(guesses, total_tries, &name)?;
                     continue;
                 }
                 "results" => {
-                    print_results(guesses, total_tries, tries);
+                    print_results(&name, guesses, total_tries, tries);
+                    continue;
+                }
+                "name" => {
+                    let new_name: String = Input::new()
+                        .with_prompt("\n \x1b[32;1m·\x1b[m Name")
+                        .interact_text()?;
+                    name = new_name.trim().replace(" ", "_");
                     continue;
                 }
                 "restart" => {
@@ -148,7 +156,7 @@ fn main() -> anyhow::Result<()> {
                     total_tries += tries;
 
                     println!(" \x1b[34;1m-\x1b[0m You win!\n");
-                    print_results(guesses, total_tries, tries);
+                    print_results(&name, guesses, total_tries, tries);
                     let new_game: String = Input::new()
                         .with_prompt(" \x1b[34m?\x1b[0m New Game? [Y/n/e]")
                         .interact_text()?;
@@ -157,17 +165,17 @@ fn main() -> anyhow::Result<()> {
                     match new_game.trim().to_lowercase().as_str() {
                         "y" | "yes" => {
                             // Only exports to the file if it exists else it does nothing
-                            exporter.export(guesses, total_tries).unwrap_or(());
+                            exporter.export(guesses, total_tries, &name).unwrap_or(());
                             break 'guess;
                         }
                         "e" | "export" => {
                             exporter
                                 .create(true)
                                 .print(true)
-                                .export(guesses, total_tries)?;
+                                .export(guesses, total_tries, &name)?;
                         }
                         _ => {
-                            exporter.export(guesses, total_tries).unwrap_or(());
+                            exporter.export(guesses, total_tries, &name).unwrap_or(());
                             goodbye(Some("\n"));
                         }
                     }
@@ -210,7 +218,7 @@ impl Exporter {
         self
     }
 
-    fn export<T>(&self, guesses: T, total_tries: T) -> std::io::Result<()>
+    fn export<T>(&self, guesses: T, total_tries: T, name: &String) -> std::io::Result<()>
     where
         T: ToString,
     {
@@ -220,8 +228,8 @@ impl Exporter {
             .open(&self.file_path)?;
         let mut wtr = csv::Writer::from_writer(file);
 
-        wtr.write_record(&["total guesses", "total attempts"])?;
-        wtr.write_record(&[guesses.to_string(), total_tries.to_string()])?;
+        wtr.write_record(&["player", "total guesses", "total attempts"])?;
+        wtr.write_record(&[name, &guesses.to_string(), &total_tries.to_string()])?;
         wtr.flush()?;
 
         if self.print {
@@ -235,10 +243,11 @@ impl Exporter {
     }
 }
 
-fn print_results<T>(guesses: T, total_tries: T, tries: T) -> ()
+fn print_results<T>(name: &String, guesses: T, total_tries: T, tries: T) -> ()
 where
     T: std::fmt::Display,
 {
+    println!(" \x1b[34m-\x1b[0m Results from the Player: \x1b[1m{name}\x1b[0m");
     println!(" \x1b[34m-\x1b[0m Number of Attempts this Round: \x1b[1m{tries}\x1b[0m");
     println!(" \x1b[34m-\x1b[0m Number of Total Attempts: \x1b[1m{total_tries}\x1b[0m");
     println!(" \x1b[34m-\x1b[0m Number of Total Guesses: \x1b[1m{guesses}\x1b[0m");
@@ -250,4 +259,11 @@ fn goodbye(beginning_str: Option<&str>) -> () {
         beginning_str.unwrap_or("")
     );
     std::thread::sleep(std::time::Duration::from_millis(500)); // sleeps 0.5 seconds
+}
+
+fn user(name: &str) -> String {
+    match std::env::var("USER") {
+        Ok(user) => user,
+        Err(_) => String::from(name),
+    }
 }
