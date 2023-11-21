@@ -227,6 +227,7 @@ impl Exporter {
         let file = OpenOptions::new()
             .create(self.create)
             .write(true)
+            .truncate(true)  // removes the content of the file before writing
             .open(&self.file_path)?;
         let mut wtr = csv::Writer::from_writer(file);
 
