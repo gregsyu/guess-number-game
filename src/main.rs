@@ -159,6 +159,8 @@ fn main() -> anyhow::Result<()> {
                     print_results(&name, guesses, total_tries, tries);
                     let new_game: String = Input::new()
                         .with_prompt(" \x1b[34m?\x1b[0m New Game? [Y/n/e]")
+                        .default("e".to_string())
+                        .show_default(false)
                         .interact_text()?;
                     let exporter = Exporter::new().file(CSV_FILE_PATH);
 
@@ -218,7 +220,7 @@ impl Exporter {
         self
     }
 
-    fn export<T>(&self, guesses: T, total_tries: T, name: &String) -> std::io::Result<()>
+    fn export<T>(&self, guesses: T, total_tries: T, name: &String) -> anyhow::Result<()>
     where
         T: ToString,
     {
