@@ -20,7 +20,9 @@ fn main() -> anyhow::Result<()> {
         // `find_map` iterates until it finds the first `Some` variant
         let result = rdr.records().find_map(|result| {
             let record = result.unwrap();
-            if let (Some(name), Some(total_tries_str), Some(guesses_str)) = (record.get(0), record.get(2), record.get(1)) {
+            if let (Some(name), Some(total_tries_str), Some(guesses_str)) =
+                (record.get(0), record.get(2), record.get(1))
+            {
                 Some((
                     String::from(name),
                     guesses_str.parse().unwrap_or(0),
@@ -68,10 +70,28 @@ fn main() -> anyhow::Result<()> {
                     continue;
                 }
                 "name" => {
+                    println!();
                     let new_name: String = Input::new()
-                        .with_prompt("\n \x1b[32;1m·\x1b[m Name")
-                        .interact_text()?;
-                    name = new_name.trim().replace(" ", "_");
+                        .with_prompt(" \x1b[32;1m·\x1b[m Name")
+                        .validate_with(|input: &String| -> anyhow::Result<(), &str> {
+                            let special = "(){}[]'\"";
+                            if !special.chars().any(|c| input.contains(c)) {
+                                Ok(())
+                            } else {
+                                Err("Invalid character.")
+                            }
+                        })
+                        .interact_text()?
+                        .trim()
+                        .to_string();
+
+                    name = if new_name.contains(" ") {
+                        println!(" \x1b[38;5;250m·\x1b[m Changing \x1b[2mspaces\x1b[0m to \x1b[2munderscores\x1b[0m");
+                        new_name.replace(" ", "_")
+                    } else {
+                        new_name
+                    };
+                    println!(" \x1b[38;5;250;1m·\x1b[m Your new name: \x1b[1m{name}\x1b[0m");
                     continue;
                 }
                 "restart" => {
@@ -171,10 +191,11 @@ fn main() -> anyhow::Result<()> {
                             break 'guess;
                         }
                         "e" | "export" => {
-                            exporter
-                                .create(true)
-                                .print(true)
-                                .export(guesses, total_tries, &name)?;
+                            exporter.create(true).print(true).export(
+                                guesses,
+                                total_tries,
+                                &name,
+                            )?;
                         }
                         _ => {
                             exporter.export(guesses, total_tries, &name).unwrap_or(());
@@ -227,7 +248,7 @@ impl Exporter {
         let file = OpenOptions::new()
             .create(self.create)
             .write(true)
-            .truncate(true)  // removes the content of the file before writing
+            .truncate(true) // removes the content of the file before writing
             .open(&self.file_path)?;
         let mut wtr = csv::Writer::from_writer(file);
 
