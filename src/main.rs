@@ -81,6 +81,8 @@ fn main() -> anyhow::Result<()> {
                                 Err("Invalid character.")
                             }
                         })
+                        .default(user("player").into())
+                        .show_default(false)
                         .interact_text()?
                         .trim()
                         .to_string();
