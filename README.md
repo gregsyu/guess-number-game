@@ -1,8 +1,9 @@
 # Guess the number
 A game for guessing a number between 1 and 100, written in **Rust**.
 
-## Useless features
-- Export files.
+## Features
+- Exporting Results.
+- A bit Colorful Output.
 
 Just one feature, so far..
 
