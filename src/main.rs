@@ -57,7 +57,7 @@ fn main() -> anyhow::Result<()> {
                     goodbye(None);
                     break 'game;
                 }
-                "export" => {
+                "save" | "export" => {
                     Exporter::new()
                         .create(true)
                         .print(true)
