@@ -85,12 +85,15 @@ fn main() -> anyhow::Result<()> {
                         .trim()
                         .to_string();
 
-                    name = if new_name.contains(" ") {
-                        println!(" \x1b[38;5;250m·\x1b[m Changing \x1b[2mspaces\x1b[0m to \x1b[2munderscores\x1b[0m");
-                        new_name.replace(" ", "_")
-                    } else {
-                        new_name
+                    name = match new_name.as_str() {
+                        "quit" | "exit" | "cancel" => continue,
+                        name if name.contains(" ") => {
+                            println!(" \x1b[38;5;250m·\x1b[m Changing \x1b[2mspaces\x1b[0m to \x1b[2munderscores\x1b[0m");
+                            new_name.replace(" ", "_")
+                        }
+                        _ => new_name,
                     };
+
                     println!(" \x1b[38;5;250;1m·\x1b[m Your new name: \x1b[1m{name}\x1b[0m");
                     continue;
                 }
