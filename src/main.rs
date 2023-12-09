@@ -1,4 +1,5 @@
 use dialoguer::{Input, Password};
+use once_cell::sync::Lazy;
 use rand::{thread_rng, Rng};
 use std::cmp::Ordering;
 use std::fs::{File, OpenOptions};
@@ -7,6 +8,7 @@ use std::path::Path;
 
 const PW_PATH: &str = "pw.txt";
 const CSV_FILE_PATH: &str = "results.csv";
+static USER: Lazy<String> = Lazy::new(|| std::env::var("USER").unwrap_or(String::from("player")));
 
 fn main() -> anyhow::Result<()> {
     println!(" \x1b[38;5;250m-\x1b[0m Guess the number \x1b[1m(0.1.4)\x1b[0m");
@@ -33,9 +35,9 @@ fn main() -> anyhow::Result<()> {
             }
         });
 
-        result.unwrap_or((user("unknown"), 0, 0))
+        result.unwrap_or((USER.clone(), 0, 0))
     } else {
-        (user("player"), 0, 0)
+        (USER.clone(), 0, 0)
     };
     let mut guesses = 0;
 
@@ -82,7 +84,7 @@ fn main() -> anyhow::Result<()> {
                                 Err("Invalid character.")
                             }
                         })
-                        .default(user("player").into())
+                        .default(USER.clone().into())
                         .show_default(false)
                         .interact_text()?
                         .trim()
@@ -194,7 +196,9 @@ fn main() -> anyhow::Result<()> {
                     match new_game.trim().to_lowercase().as_str() {
                         "y" | "yes" => {
                             // Only exports to the file if it exists else it does nothing
-                            exporter.export(total_guesses, total_tries, &name).unwrap_or(());
+                            exporter
+                                .export(total_guesses, total_tries, &name)
+                                .unwrap_or(());
                             break 'guess;
                         }
                         "e" | "export" => {
@@ -205,7 +209,9 @@ fn main() -> anyhow::Result<()> {
                             )?;
                         }
                         _ => {
-                            exporter.export(total_guesses, total_tries, &name).unwrap_or(());
+                            exporter
+                                .export(total_guesses, total_tries, &name)
+                                .unwrap_or(());
                             goodbye(Some("\n"));
                         }
                     }
@@ -282,7 +288,9 @@ where
     println!(" \x1b[34m-\x1b[0m Number of Attempts this Round: \x1b[1m{tries}\x1b[0m");
     println!(" \x1b[34m-\x1b[0m Number of Total Attempts: \x1b[1m{total_tries}\x1b[0m");
     println!(" \x1b[34m-\x1b[0m Number of Guesses in This Process: \x1b[1m{guesses}\x1b[0m");
-    println!(" \x1b[34m-\x1b[0m Number of Total Guesses in all Games: \x1b[1m{total_guesses}\x1b[0m");
+    println!(
+        " \x1b[34m-\x1b[0m Number of Total Guesses in all Games: \x1b[1m{total_guesses}\x1b[0m"
+    );
 }
 
 fn goodbye(beginning_str: Option<&str>) -> () {
@@ -291,11 +299,4 @@ fn goodbye(beginning_str: Option<&str>) -> () {
         beginning_str.unwrap_or("")
     );
     std::thread::sleep(std::time::Duration::from_millis(500)); // sleeps 0.5 seconds
-}
-
-fn user(name: &str) -> String {
-    match std::env::var("USER") {
-        Ok(user) => user,
-        Err(_) => String::from(name),
-    }
 }
