@@ -80,12 +80,16 @@ fn main() -> Result<()> {
                     goodbye(None);
                     break 'game;
                 }
-                "save" | "export" => {
+                guess if guess.contains("save") => {
                     Exporter::new()
                         .create(true)
                         .print(true)
                         .file(CSV_FILE_PATH)
                         .export(total_guesses, total_tries, &name)?;
+                    if guess.contains("quit") {
+                        goodbye(None);
+                        break 'game;
+                    }
                     continue;
                 }
                 "results" => {
