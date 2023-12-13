@@ -14,24 +14,7 @@ const CSV_FILE_PATH: &str = "results.csv";
 static USER: Lazy<String> = Lazy::new(|| var("USER").unwrap_or(String::from("player")));
 
 fn main() -> Result<()> {
-    // Handling command line arguments
     let args = args().collect::<Vec<String>>();
-    if args.len() > 1 {
-        match args[1].as_str() {
-            "-h" | "--help" => print_help(),
-            "-v" | "--version" => println!("Guess the number \x1b[1m({})\x1b[0m", VERSION),
-            _ => println!(
-                "unknown option '{}'\nTry `{} -h' for more information.",
-                args[1], args[0]
-            ),
-        }
-        return Ok(());
-    }
-
-    println!(
-        " \x1b[38;5;250m-\x1b[0m Guess the number \x1b[1m({})\x1b[0m",
-        VERSION
-    );
     // Takes the values of `total_guesses`, `total_tries` and `name` from `CSV_FILE_PATH`
     let (mut name, mut total_guesses, mut total_tries) = if Path::new(CSV_FILE_PATH).exists() {
         let file = File::open(CSV_FILE_PATH)?;
@@ -61,6 +44,23 @@ fn main() -> Result<()> {
     };
     let mut guesses = 0;
 
+    if args.len() > 1 {
+        match args[1].as_str() {
+            "-h" | "--help" => print_help(),
+            "-v" | "--version" => print_banner(""),
+            "results" => {
+                print_banner(" - ");
+                print_results(&name, total_guesses, 0, total_tries, 0);
+            }
+            _ => eprintln!(
+                "unknown option '{}'\nTry `{} -h' for more information.",
+                args[1], args[0]
+            ),
+        }
+        return Ok(());
+    }
+
+    print_banner(" - ");
     'game: loop {
         let secret_number = thread_rng().gen_range(1..101);
         let mut tries = 1;
@@ -325,9 +325,16 @@ fn goodbye(beginning_str: Option<&str>) -> () {
     std::thread::sleep(std::time::Duration::from_millis(500)); // sleeps 0.5 seconds
 }
 
+fn print_banner(string: &str) -> () {
+    println!(
+        "\x1b[38;5;250m{}\x1b[0mGuess the number \x1b[1m({})\x1b[0m",
+        string, VERSION
+    );
+}
+
 fn print_help() -> () {
-    println!("Guess The Number \x1b[1m({})\x1b[0m\n", VERSION);
-    println!("Simplest Guess The Number game ever\n");
+    print_banner("");
+    println!("\nSimplest Guess The Number game ever\n");
     println!("Usage:");
     println!("  guess_number [OPTIONS]\n");
     println!("Options:");
@@ -340,6 +347,7 @@ fn print_help() -> () {
     println!("  name            Change player name");
     println!("  restart         Start a new game");
     println!("  number          Reveal the secret number (requires password)\n");
-    println!("Example:");
+    println!("Examples:");
     println!("  guess_number             Start a new game");
+    println!("  guess_number results     Show game results");
 }
