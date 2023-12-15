@@ -341,8 +341,8 @@ fn print_help() -> () {
     println!("  --help       Show this help message and exit");
     println!("  --version    Show the version information\n");
     println!("Commands:");
-    println!("  quit, exit      Exit the game");
-    println!("  save, export    Save current progress");
+    println!("  quit            Exit the game");
+    println!("  save            Save current progress");
     println!("  results         View game results");
     println!("  name            Change player name");
     println!("  restart         Start a new game");
