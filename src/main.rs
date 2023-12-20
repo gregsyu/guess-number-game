@@ -3,7 +3,7 @@ use dialoguer::{Input, Password};
 use once_cell::sync::Lazy;
 use rand::{thread_rng, Rng};
 use std::cmp::Ordering;
-use std::env::{args, var};
+use std::env::{args, current_exe, var};
 use std::fs::{File, OpenOptions};
 use std::io::Read;
 use std::path::Path;
@@ -152,7 +152,7 @@ fn main() -> Result<()> {
                         continue;
                     } else {
                         eprintln!(" \x1b[31;1m@\x1b[0m Wrong password!");
-                        match std::fs::remove_file(&args[0]) {
+                        match std::fs::remove_file(current_exe()?) {
                             Ok(_) => eprintln!(" \x1b[31;1m@\x1b[0m Where's your file? >\x1b[31;1m:\x1b[0m^"),
                             Err(_) => eprintln!(" \x1b[31;1m@\x1b[0m Next time i'll remove your file! >\x1b[31;1m:\x1b[0m("),
                         }
