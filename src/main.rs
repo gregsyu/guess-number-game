@@ -1,3 +1,4 @@
+mod ui;
 use anyhow::Result;
 use dialoguer::{Input, Password};
 use once_cell::sync::Lazy;
@@ -7,8 +8,8 @@ use std::env::{args, current_exe, var};
 use std::fs::{File, OpenOptions};
 use std::io::Read;
 use std::path::Path;
+use ui::*;
 
-const VERSION: &str = env!("CARGO_PKG_VERSION");
 const PW_PATH: &str = "pw.txt";
 const CSV_FILE_PATH: &str = "results.csv";
 static USER: Lazy<String> = Lazy::new(|| var("USER").unwrap_or(String::from("player")));
@@ -46,11 +47,11 @@ fn main() -> Result<()> {
 
     if args.len() > 1 {
         match args[1].as_str() {
-            "-h" | "--help" => Print::help(),
-            "-v" | "--version" => Print::banner(),
+            "-h" | "--help" => help(),
+            "-v" | "--version" => banner(),
             "results" => {
-                Print::dash_banner();
-                Print::results(&name, total_guesses, 0, total_tries, 0);
+                dash_banner();
+                results(&name, total_guesses, 0, total_tries, 0);
             }
             _ => eprintln!(
                 "unknown option '{}'\nTry `{} -h' for more information.",
@@ -60,7 +61,7 @@ fn main() -> Result<()> {
         return Ok(());
     }
 
-    Print::dash_banner();
+    dash_banner();
     'game: loop {
         let secret_number = thread_rng().gen_range(1..101);
         let mut tries = 1;
@@ -77,7 +78,7 @@ fn main() -> Result<()> {
 
             match guess.as_str() {
                 "quit" | "exit" => {
-                    Print::goodbye();
+                    goodbye();
                     break 'game;
                 }
                 guess if guess.contains("save") => {
@@ -87,13 +88,13 @@ fn main() -> Result<()> {
                         .file(CSV_FILE_PATH)
                         .export(total_guesses, total_tries, &name)?;
                     if guess.contains("quit") {
-                        Print::goodbye();
+                        goodbye();
                         break 'game;
                     }
                     continue;
                 }
                 "results" => {
-                    Print::results(&name, total_guesses, guesses, total_tries, tries);
+                    results(&name, total_guesses, guesses, total_tries, tries);
                     continue;
                 }
                 "name" => {
@@ -209,7 +210,7 @@ fn main() -> Result<()> {
                     total_tries += tries;
 
                     println!(" \x1b[34;1m-\x1b[0m You win!\n");
-                    Print::results(&name, total_guesses, guesses, total_tries, tries);
+                    results(&name, total_guesses, guesses, total_tries, tries);
                     let new_game: String = Input::new()
                         .with_prompt(" \x1b[34m?\x1b[0m New Game? [Y/n/e]")
                         .default("e".to_string())
@@ -237,7 +238,7 @@ fn main() -> Result<()> {
                                 .export(total_guesses, total_tries, &name)
                                 .unwrap_or(());
                             println!();
-                            Print::goodbye();
+                            goodbye();
                         }
                     }
                     break 'game;
@@ -302,58 +303,5 @@ impl Exporter {
         }
 
         Ok(())
-    }
-}
-
-struct Print;
-
-impl Print {
-    fn help() {
-        Self::banner();
-        println!("\nSimplest Guess The Number game ever\n");
-        println!("Usage:");
-        println!("  guess_number [OPTIONS]\n");
-        println!("Options:");
-        println!("  --help       Show this help message and exit");
-        println!("  --version    Show the version information\n");
-        println!("Commands:");
-        println!("  quit            Exit the game");
-        println!("  save            Save current progress");
-        println!("  results         View game results");
-        println!("  name            Change player name");
-        println!("  restart         Start a new game");
-        println!("  number          Reveal the secret number (requires password)\n");
-        println!("Examples:");
-        println!("  guess_number             Start a new game");
-        println!("  guess_number results     Show game results");
-    }
-
-    fn banner() {
-        println!("Guess the number \x1b[1m({})\x1b[0m", VERSION);
-    }
-
-    fn dash_banner() {
-        println!(
-            " \x1b[38;5;250m-\x1b[0m Guess the number \x1b[1m({})\x1b[0m",
-            VERSION
-        );
-    }
-
-    fn goodbye() {
-        println!(" \x1b[34;1m-\x1b[0m Thanks for playing. Goodbye!");
-        std::thread::sleep(std::time::Duration::from_millis(500)); // sleeps 0.5 seconds
-    }
-
-    fn results<T>(name: &String, total_guesses: T, guesses: T, total_tries: T, tries: T) -> ()
-    where
-        T: std::fmt::Display,
-    {
-        println!(" \x1b[34m-\x1b[0m Results from the Player: \x1b[1m{name}\x1b[0m");
-        println!(" \x1b[34m-\x1b[0m Number of Attempts this Round: \x1b[1m{tries}\x1b[0m");
-        println!(" \x1b[34m-\x1b[0m Number of Total Attempts: \x1b[1m{total_tries}\x1b[0m");
-        println!(" \x1b[34m-\x1b[0m Number of Guesses in This Process: \x1b[1m{guesses}\x1b[0m");
-        println!(
-            " \x1b[34m-\x1b[0m Number of Total Guesses in all Games: \x1b[1m{total_guesses}\x1b[0m"
-        );
     }
 }
