@@ -164,7 +164,7 @@ fn main() -> Result<()> {
             }
 
             let guess: isize = match guess.parse() {
-                Ok(num) if num >= 1 && num <= 100 => num,
+                Ok(num) if (1..=100).contains(&num) => num,
                 Ok(num) if num < 1 => {
                     println!(" \x1b[31;1m@\x1b[0m Please, Enter a number greater than 0");
                     continue;
@@ -173,6 +173,7 @@ fn main() -> Result<()> {
                     println!(" \x1b[31;1m@\x1b[0m Please, Enter a number less than 100");
                     continue;
                 }
+                Ok(_) => continue, // Fallback case
                 Err(_) => {
                     println!(" \x1b[31;1m@\x1b[0m Please, Enter a valid number");
                     continue;
