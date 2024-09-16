@@ -180,68 +180,65 @@ fn main() -> Result<()> {
                 }
             };
 
-            match guess.cmp(&secret_number) {
-                Ordering::Less => {
-                    let diff = secret_number - guess;
-                    if diff > 10 {
-                        println!(" \x1b[31m@\x1b[0m Too small!");
-                    } else if diff > 5 {
-                        println!(" \x1b[31m@\x1b[0m Small!");
-                    } else {
-                        println!(" \x1b[31m@\x1b[0m Just a bit \x1b[1msmall\x1b[0m!");
-                    }
-                    tries += 1;
-                }
-                Ordering::Greater => {
-                    let diff = guess - secret_number;
-                    if diff > 10 {
-                        println!(" \x1b[31m@\x1b[0m Too big!");
-                    } else if diff > 5 {
-                        println!(" \x1b[31m@\x1b[0m Big!");
-                    } else {
-                        println!(" \x1b[31m@\x1b[0m Just a bit \x1b[1mbig\x1b[0m!");
-                    }
-                    tries += 1;
-                }
-                Ordering::Equal => {
-                    total_guesses += 1;
-                    guesses += 1;
-                    total_tries += tries;
+            let ordering = guess.cmp(&secret_number);
+            let diff = (secret_number - guess).abs();
 
-                    println!(" \x1b[34;1m-\x1b[0m You win!\n");
-                    results(&name, total_guesses, guesses, total_tries, tries);
-                    let new_game: String = Input::new()
-                        .with_prompt(" \x1b[34m?\x1b[0m New Game? [Y/n/e]")
-                        .default("e".to_string())
-                        .show_default(false)
-                        .interact_text()?;
-                    let exporter = Exporter::new().file(CSV_FILE_PATH);
+            let feedback_msg = || match ordering {
+                Ordering::Less => match diff {
+                    d if d > 10 => "Too small!",
+                    d if d > 5 => "Small!",
+                    _ => "Just a bit \x1b[1msmall\x1b[0m!",
+                },
+                Ordering::Greater => match diff {
+                    d if d > 10 => "Too big!",
+                    d if d > 5 => "Big!",
+                    _ => "Just a bit \x1b[1mbig\x1b[0m!",
+                },
+                Ordering::Equal => "You win!",
+            };
 
-                    match new_game.trim().to_lowercase().as_str() {
-                        "y" | "yes" => {
-                            // Only exports to the file if it exists else it does nothing
-                            exporter
-                                .export(total_guesses, total_tries, &name)
-                                .unwrap_or(());
-                            break 'guess;
-                        }
-                        "e" | "export" => {
-                            exporter.create(true).print(true).export(
-                                total_guesses,
-                                total_tries,
-                                &name,
-                            )?;
-                        }
-                        _ => {
-                            exporter
-                                .export(total_guesses, total_tries, &name)
-                                .unwrap_or(());
-                            println!();
-                            goodbye();
-                        }
+            if let Ordering::Equal = ordering {
+                total_guesses += 1;
+                guesses += 1;
+                total_tries += tries;
+
+                println!(" \x1b[34;1m-\x1b[0m {}\n", feedback_msg());
+                results(&name, total_guesses, guesses, total_tries, tries);
+                let new_game: String = Input::new()
+                    .with_prompt(" \x1b[34m?\x1b[0m New Game? [Y/n/e]")
+                    .default("e".to_string())
+                    .show_default(false)
+                    .interact_text()?;
+                let exporter = Exporter::new().file(CSV_FILE_PATH);
+
+                match new_game.trim().to_lowercase().as_str() {
+                    "y" | "yes" => {
+                        // Only exports to the file if it exists else it does nothing
+                        exporter
+                            .export(total_guesses, total_tries, &name)
+                            .unwrap_or(());
+                        break 'guess;
                     }
-                    break 'game;
+                    "e" | "export" => {
+                        exporter.create(true).print(true).export(
+                            total_guesses,
+                            total_tries,
+                            &name,
+                        )?;
+                    }
+                    _ => {
+                        exporter
+                            .export(total_guesses, total_tries, &name)
+                            .unwrap_or(());
+                        println!();
+                        goodbye();
+                    }
                 }
+
+                break 'game;
+            } else {
+                println!(" \x1b[31m@\x1b[0m {}", feedback_msg());
+                tries += 1;
             }
         }
     }
