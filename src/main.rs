@@ -164,16 +164,14 @@ fn main() -> Result<()> {
             }
 
             let guess: isize = match guess.parse() {
-                Ok(num) => {
-                    if num < 1 {
-                        println!(" \x1b[31;1m@\x1b[0m Please, Enter a number greater than 0");
-                        continue;
-                    } else if num > 100 {
-                        println!(" \x1b[31;1m@\x1b[0m Please, Enter a number less than 100");
-                        continue;
-                    } else {
-                        num
-                    }
+                Ok(num) if num >= 1 && num <= 100 => num,
+                Ok(num) if num < 1 => {
+                    println!(" \x1b[31;1m@\x1b[0m Please, Enter a number greater than 0");
+                    continue;
+                }
+                Ok(num) if num > 100 => {
+                    println!(" \x1b[31;1m@\x1b[0m Please, Enter a number less than 100");
+                    continue;
                 }
                 Err(_) => {
                     println!(" \x1b[31;1m@\x1b[0m Please, Enter a valid number");
