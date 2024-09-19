@@ -1,13 +1,15 @@
+mod structs;
 mod ui;
+
 use anyhow::Result;
 use dialoguer::{Input, Password};
 use once_cell::sync::Lazy;
-use rand::{thread_rng, Rng};
 use std::cmp::Ordering;
 use std::env::{args, current_exe, var};
-use std::fs::{File, OpenOptions};
+use std::fs::File;
 use std::io::Read;
 use std::path::Path;
+use structs::{Exporter, GameResults};
 use ui::*;
 
 const PW_PATH: &str = "pw.txt";
@@ -128,7 +130,10 @@ fn main() -> Result<()> {
                     _ => new_name,
                 };
 
-                println!(" \x1b[38;5;250;1m·\x1b[m Your new name: \x1b[1m{}\x1b[0m", game.name);
+                println!(
+                    " \x1b[38;5;250;1m·\x1b[m Your new name: \x1b[1m{}\x1b[0m",
+                    game.name
+                );
                 continue;
             }
             "restart" => {
@@ -206,7 +211,13 @@ fn main() -> Result<()> {
             game.record_guess();
 
             println!(" \x1b[34;1m-\x1b[0m {}\n", feedback_msg());
-            results(&game.name, game.total_guesses, game.guesses, game.total_tries, game.tries);
+            results(
+                &game.name,
+                game.total_guesses,
+                game.guesses,
+                game.total_tries,
+                game.tries,
+            );
             let new_game: String = Input::new()
                 .with_prompt(" \x1b[34m?\x1b[0m New Game? [Y/n/e]")
                 .default("e".to_string())
@@ -247,98 +258,4 @@ fn main() -> Result<()> {
     }
 
     Ok(())
-}
-
-struct GameResults {
-    secret_number: isize,
-    tries: usize,
-    total_guesses: usize,
-    guesses: usize,
-    total_tries: usize,
-    name: String,
-}
-
-impl GameResults {
-    fn new() -> Self {
-        let secret_number = thread_rng().gen_range(1..=100);
-        GameResults {
-            secret_number,
-            tries: 1,
-            total_guesses: 0,
-            guesses: 0,
-            total_tries: 0,
-            name: String::new(),
-        }
-    }
-
-    fn update_attempts(&mut self) {
-        self.tries += 1;
-    }
-
-    fn record_guess(&mut self) {
-        self.total_guesses += 1;
-        self.guesses += 1;
-        self.total_tries += self.tries;
-    }
-
-    fn new_game(&mut self) {
-        self.tries = 1;
-        self.secret_number = thread_rng().gen_range(1..=100);
-    }
-}
-
-struct Exporter {
-    file_path: String,
-    create: bool,
-    print: bool,
-}
-
-impl Exporter {
-    fn new() -> Self {
-        Exporter {
-            file_path: String::new(),
-            create: false,
-            print: false,
-        }
-    }
-
-    fn file(mut self, file_path: &str) -> Self {
-        self.file_path = String::from(file_path);
-        self
-    }
-
-    fn create(mut self, create: bool) -> Self {
-        self.create = create;
-        self
-    }
-
-    fn print(mut self, print: bool) -> Self {
-        self.print = print;
-        self
-    }
-
-    fn export<T>(&self, total_guesses: T, total_tries: T, name: &String) -> Result<()>
-    where
-        T: ToString,
-    {
-        let file = OpenOptions::new()
-            .create(self.create)
-            .write(true)
-            .truncate(true) // removes the content of the file before writing
-            .open(&self.file_path)?;
-        let mut wtr = csv::Writer::from_writer(file);
-
-        wtr.write_record(&["player", "total guesses", "total attempts"])?;
-        wtr.write_record(&[name, &total_guesses.to_string(), &total_tries.to_string()])?;
-        wtr.flush()?;
-
-        if self.print {
-            println!(
-                "\n \x1b[34;1m*\x1b[0m Exporting to file: {}",
-                &self.file_path
-            );
-        }
-
-        Ok(())
-    }
 }
