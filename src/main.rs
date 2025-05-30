@@ -76,7 +76,7 @@ fn main() -> Result<()> {
             .with_prompt(format!("\n \x1b[32m{}\x1b[0m Input your guess", sign))
             .interact_text()?;
 
-        match guess.as_str() {
+        match guess.trim() {
             "quit" | "exit" => {
                 goodbye();
                 break;
