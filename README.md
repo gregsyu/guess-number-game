@@ -34,6 +34,13 @@ cargo build --release
 mv ./target/release/guess_number /usr/local/bin
 ```
 
+## 🐳 Docker
+You can also build and run the game with Docker:
+```bash
+docker build -t guess_number .
+docker run -it --rm guess_number
+```
+
 ## ⚡️ Usage
 ```bash
 guess_number [OPTIONS]
