@@ -81,6 +81,10 @@ fn main() -> Result<()> {
                 goodbye();
                 break;
             }
+            "help" | "?" => {
+                help_commands();
+                continue;
+            }
             guess if guess.contains("save") => {
                 Exporter::new()
                     .create(true)

@@ -20,6 +20,16 @@ pub fn help() {
     println!("  guess_number results     Show game results");
 }
 
+pub fn help_commands() {
+    println!("\n \x1b[34m•\x1b[m Commands:");
+    println!(" \x1b[34m•\x1b[m quit            Exit the game");
+    println!(" \x1b[34m•\x1b[m save            Save current progress");
+    println!(" \x1b[34m•\x1b[m results         View game results");
+    println!(" \x1b[34m•\x1b[m name            Change player name");
+    println!(" \x1b[34m•\x1b[m restart         Start a new game");
+    println!(" \x1b[34m•\x1b[m number          Reveal the secret number (requires password)");
+}
+
 pub fn banner() {
     println!("Guess the number \x1b[1m({})\x1b[0m", VERSION);
 }
